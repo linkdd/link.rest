@@ -27,7 +27,7 @@ from link.json.resolver import JsonResolver
 )
 class RestWrapper(object):
 
-    DEFAULT_SCHEMAS = []
+    DEFAULT_SCHEMAS = {}
 
     @property
     def schemas(self):
