@@ -41,11 +41,16 @@ class RestWrapper(object):
         if value is None:
             value = RestWrapper.DEFAULT_SCHEMAS
 
-        if isinstance(value, string_types):
-            value = {'$ref': value}
-
         resolver = JsonResolver()
-        self._schemas = resolver(value)
+
+        if isinstance(value, string_types):
+            value = resolver(value)
+
+        for key in value:
+            if isinstance(value[key], string_types):
+                value[key] = resolver(value[key])
+
+        self._schemas = value
 
     def get_collection_href(self, req, href=None):
         selfurl = urlunsplit(
