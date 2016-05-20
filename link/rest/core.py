@@ -62,11 +62,12 @@ class SchemaApi(object):
 
         link = matches[0]
 
-        body = parse_qs(content)
+        body = link['data']
+        body.update(parse_qs(content))
         body.update(query)
 
         try:
-            self.validator.validate(link.get('schema', {}), body)
+            self.validator.validate(link['link'].get('schema', {}), body)
 
         except JsonValidationError as err:
             raise_from(
@@ -78,7 +79,7 @@ class SchemaApi(object):
 
     def execute(self, method, url, request):
         link = self.get_links(method, url)[0]
-        handler = lookup(link['rel'])
+        handler = lookup(link['link']['rel'])
 
         return handler(**request)
 
@@ -86,7 +87,10 @@ class SchemaApi(object):
         link = self.get_links(method, url)[0]
 
         try:
-            self.validator.validate(link.get('targetSchema', {}), response)
+            self.validator.validate(
+                link['link'].get('targetSchema', {}),
+                response
+            )
 
         except JsonValidationError as err:
             raise_from(
