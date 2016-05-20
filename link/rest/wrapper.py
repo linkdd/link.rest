@@ -10,7 +10,7 @@ from link.rest.exceptions import MissingLinkError
 from link.rest.exceptions import MultipleLinksMatchingError
 from link.rest.exceptions import RequestValidationError
 from link.rest.exceptions import ResponseValidationError
-
+from link.rest.message import RestMessage
 from link.rest.core import SchemaApi
 from link.rest import CONF_BASE_PATH
 
@@ -41,16 +41,19 @@ class RestWrapper(object):
         if value is None:
             value = RestWrapper.DEFAULT_SCHEMAS
 
-        resolver = JsonResolver()
-
         if isinstance(value, string_types):
-            value = resolver(value)
+            value = self.resolver(value)
 
         for key in value:
             if isinstance(value[key], string_types):
-                value[key] = resolver(value[key])
+                value[key] = self.resolver(value[key])
 
         self._schemas = value
+
+    def __init__(self, *args, **kwargs):
+        super(RestWrapper, self).__init__(*args, **kwargs)
+
+        self.resolver = JsonResolver()
 
     def get_collection_href(self, req, href=None):
         selfurl = urlunsplit(
@@ -88,9 +91,25 @@ class RestWrapper(object):
 
             else:
                 resp.status = 405
+                resp.content = generate_collection_response(
+                    self.get_collection_href(req),
+                    links=[
+                        {
+                            "rel": "self",
+                            "href": self.get_collection_href(req),
+                            "method": "GET"
+                        }
+                    ],
+                    error={
+                        'title': 'Invalid method',
+                        'code': '405 Method not allowed',
+                        'message': '{0} method not allowed'.format(req.method)
+                    }
+                )
 
         else:
-            api = SchemaApi(self.schemas[path[0]])
+            schema = self.schemas[path[0]]
+            api = SchemaApi(schema)
 
             requrl = '/{0}?{1}'.format(
                 '/'.join(path[1:]),
@@ -109,13 +128,39 @@ class RestWrapper(object):
 
                 api.validate_response(req.method, requrl, result)
 
-                resp.status = 200
-                resp.content = result
+                if isinstance(result, tuple):
+                    msg = RestMessage(
+                        result[0],
+                        items=result[1],
+                        links=result[2]
+                    )
+
+                elif isinstance(result, dict):
+                    msg = RestMessage(
+                        result['status'],
+                        items=result.get('items', None),
+                        links=result.get('links', None)
+                    )
+
+                elif isinstance(result, int):
+                    msg = RestMessage(result['status'])
+
+                else:
+                    msg = result
+
+                resp.status = msg.status
+                resp.content = generate_collection_response(
+                    self.get_collection_href(req, '/'.join(path)),
+                    items=msg.items,
+                    links=msg.links,
+                    schema=schema
+                )
 
             except MissingLinkError as err:
                 resp.status = 404
                 resp.content = generate_collection_response(
                     self.get_collection_href(req, '/'.join(path)),
+                    schema=schema,
                     error={
                         'title': 'Missing link error',
                         'code': '404 Not Found',
@@ -127,6 +172,7 @@ class RestWrapper(object):
                 resp.status = 300
                 resp.content = generate_collection_response(
                     self.get_collection_href(req, '/'.join(path)),
+                    schema=schema,
                     error={
                         'title': 'Multiple links matching error',
                         'code': '300 Multiple Choices',
@@ -138,6 +184,7 @@ class RestWrapper(object):
                 resp.status = 400
                 resp.content = generate_collection_response(
                     self.get_collection_href(req, '/'.join(path)),
+                    schema=schema,
                     error={
                         'title': 'Request validation error',
                         'code': '400 Bad Request',
@@ -149,6 +196,7 @@ class RestWrapper(object):
                 resp.status = 500
                 resp.content = generate_collection_response(
                     self.get_collection_href(req, '/'.join(path)),
+                    schema=schema,
                     error={
                         'title': 'Response validation error',
                         'code': '500 Internal Server Error',
@@ -160,6 +208,7 @@ class RestWrapper(object):
                 resp.status = 501
                 resp.content = generate_collection_response(
                     self.get_collection_href(req, '/'.join(path)),
+                    schema=schema,
                     error={
                         'title': 'Not implemented error',
                         'code': '501 Not Implemented',
@@ -171,6 +220,7 @@ class RestWrapper(object):
                 resp.status = 500
                 resp.content = generate_collection_response(
                     self.get_collection_href(req, '/'.join(path)),
+                    schema=schema,
                     error={
                         'title': 'Unhandled exception',
                         'code': '500 Internal Server Error',
