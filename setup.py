@@ -17,7 +17,7 @@ REQUIREMENTS = [
     'six==1.10.0',
     'parse==1.6.6',
     'link.json==0.4',
-    'link.wsgi==0.2'
+    'link.wsgi==0.3'
 ]
 
 
