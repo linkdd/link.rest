@@ -22,7 +22,7 @@ from link.json.resolver import JsonResolver
     paths='{0}/wrapper.conf'.format(CONF_BASE_PATH),
     conf=category(
         'RESTWRAPPER',
-        Parameter('schemas')
+        Parameter(name='schemas')
     )
 )
 class RestWrapper(object):
@@ -73,7 +73,7 @@ class RestWrapper(object):
         return href
 
     def __call__(self, req, resp):
-        path = filter(lambda p: p, req.path.split('/'))
+        path = list(filter(lambda p: p, req.path.split('/')))
 
         if not path:
             if req.method == 'GET':
