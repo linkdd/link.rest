@@ -5,6 +5,10 @@ class RestError(Exception):
     pass
 
 
+class MultipleLinksMatchingError(RestError):
+    pass
+
+
 class MissingLinkError(RestError):
     pass
 

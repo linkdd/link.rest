@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from b3j0f.conf import Configurable, category
-from b3j0f.utils.pah import lookup
+from b3j0f.utils.path import lookup
 
 from link.rest.exceptions import MultipleLinksMatchingError
 from link.rest.exceptions import ResponseValidationError
