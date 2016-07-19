@@ -16,7 +16,7 @@ REQUIREMENTS = [
     'b3j0f.conf>=0.3.18',
     'six>=1.10.0',
     'parse>=1.6.6',
-    'link.json>=0.8',
+    'link.json>=0.9',
     'link.wsgi>=0.4'
 ]
 
